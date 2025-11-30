@@ -1,67 +1,98 @@
 "use client";
 
-import { useState } from "react";
-import DiagnosisForm from "@/components/DiagnosisForm";
-import ResultsPanel from "@/components/ResultsPanel";
-import ModelViewer from "@/components/ModelViewer";
+import React, { useState, useMemo } from "react";
+import { Hero } from "@/components/Hero";
+import { DiagnosticInterface } from "@/components/DiagnosticInterface";
+import { ArchitectureSection } from "@/components/ArchitectureSection";
+import { FeaturesSection } from "@/components/FeaturesSection";
+import { AboutSection } from "@/components/AboutSection";
+import { Navigation } from "@/components/Navigation";
+import { motion, AnimatePresence } from "motion/react";
 
 export default function Home() {
-  const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<any[]>([]);
-  const [highlight, setHighlight] = useState<string | null>(null);
+  const [showDiagnostic, setShowDiagnostic] = useState(false);
 
-  const handleDiagnose = async (text: string) => {
-    setLoading(true);
-    setResults([]);
-    setHighlight(null);
-
-    try {
-      const response = await fetch("http://localhost:8000/api/v1/diagnose", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text_description: text }),
-      });
-
-      const data = await response.json();
-      if (data.status === "success" && data.results.length > 0) {
-        setResults(data.results);
-        setHighlight(data.results[0].diagnosis_id);
-      }
-    } catch (error) {
-      console.error("Diagnosis failed:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const particles = useMemo(
+    () =>
+      [...Array(20)].map(() => ({
+        left: Math.random() * 100,
+        top: Math.random() * 100,
+        duration: 3 + Math.random() * 2,
+        delay: Math.random() * 2,
+      })),
+    []
+  );
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 p-8">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
-        
-        {/* Left Column: Input & Results */}
-        <div className="space-y-8">
-          <div className="text-center lg:text-left">
-            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mb-2">
-              Neuro-Symbolic Diagnosis
-            </h1>
-            <p className="text-gray-400">
-              Describe your hardware issue to get an instant expert analysis.
-            </p>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+      {/* Animated background grid */}
+      <motion.div
+        className="fixed inset-0 bg-[linear-gradient(rgba(30,58,138,0.2)_1px,transparent_1px),linear-gradient(90deg,rgba(30,58,138,0.2)_1px,transparent_1px)] bg-[size:50px_50px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,black,transparent)]"
+        animate={{
+          backgroundPosition: ["0px 0px", "50px 50px"],
+        }}
+        transition={{
+          duration: 20,
+          repeat: Infinity,
+          ease: "linear",
+        }}
+      />
 
-          <DiagnosisForm onDiagnose={handleDiagnose} loading={loading} />
-          <ResultsPanel results={results} />
-        </div>
+      {/* Floating particles */}
+      {particles.map((particle, i) => (
+        <motion.div
+          key={i}
+          className="fixed w-1 h-1 bg-blue-400/30 rounded-full"
+          style={{
+            left: `${particle.left}%`,
+            top: `${particle.top}%`,
+          }}
+          animate={{
+            y: [0, -30, 0],
+            opacity: [0.2, 0.5, 0.2],
+            scale: [1, 1.5, 1],
+          }}
+          transition={{
+            duration: particle.duration,
+            repeat: Infinity,
+            delay: particle.delay,
+          }}
+        />
+      ))}
 
-        {/* Right Column: 3D Visualization */}
-        <div className="lg:sticky lg:top-8 h-fit">
-          <ModelViewer highlight={highlight} />
-          <div className="mt-4 text-center text-sm text-gray-500">
-            Interactive 3D View • Drag to Rotate
-          </div>
-        </div>
-
+      <div className="relative z-10">
+        <AnimatePresence mode="wait">
+          {!showDiagnostic ? (
+            <motion.div
+              key="home"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Navigation />
+              <Hero
+                onStartDiagnosis={() => setShowDiagnostic(true)}
+              />
+              <ArchitectureSection />
+              <FeaturesSection />
+              <AboutSection />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="diagnostic"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <DiagnosticInterface
+                onBack={() => setShowDiagnostic(false)}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-    </main>
+    </div>
   );
 }
